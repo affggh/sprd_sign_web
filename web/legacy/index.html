@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SPRD Sign Tool</title>
+  <!-- 引入Google字体 -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+  <!-- 引入MDC Web CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/material-components-web@14.0.0/dist/material-components-web.min.css">
+  <style>
+    /* 定义CSS变量以支持亮色和暗色主题 */
+    :root {
+      /* 亮色主题变量 */
+      --color-background: #f5f5f5;
+      --color-surface: #ffffff;
+      --color-primary: #6200ee;
+      --color-on-primary: #ffffff;
+      --color-secondary: #03dac6;
+      --color-on-surface: #000000;
+      --color-border: #e0e0e0;
+      --color-text: #000000;
+      --color-dropzone-border: #6200ee;
+      --color-dropzone-hover-bg: rgba(98, 0, 238, 0.1);
+      --color-dropzone-hover-border: #3700b3;
+      --color-dropzone-text: #6200ee;
+      --color-dropzone-hover-text: #3700b3;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        /* 暗色主题变量 */
+        --color-background: #121212;
+        --color-surface: #1e1e1e;
+        --color-primary: #bb86fc;
+        --color-on-primary: #000000;
+        --color-secondary: #03dac6;
+        --color-on-surface: #ffffff;
+        --color-border: #333333;
+        --color-text: #ffffff;
+        --color-dropzone-border: #bb86fc;
+        --color-dropzone-hover-bg: rgba(187, 134, 252, 0.1);
+        --color-dropzone-hover-border: #3700b3;
+        --color-dropzone-text: #bb86fc;
+        --color-dropzone-hover-text: #3700b3;
+      }
+    }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background-color: var(--color-background);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      color: var(--color-text);
+    }
+
+    /* App Bar 样式 */
+    .mdc-top-app-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 2;
+      background-color: var(--color-surface);
+      color: var(--color-on-surface);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .mdc-top-app-bar__title {
+      font-weight: 500;
+    }
+
+    /* 主内容区域 */
+    .content {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      padding: 80px 20px 20px; /* 留出App Bar的空间 */
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+
+    /* 上传容器 */
+    .upload-container {
+      background-color: var(--color-surface);
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      padding: 30px;
+      margin-bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: background-color 0.3s, box-shadow 0.3s;
+    }
+
+    /* 拖拽区域 */
+    .drop-zone {
+      border: 2px dashed var(--color-dropzone-border);
+      border-radius: 8px;
+      padding: 40px;
+      text-align: center;
+      color: var(--color-dropzone-text);
+      transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+      cursor: pointer;
+      width: calc(100% - 60px); /* 宽度为.upload-container的宽度减40px */
+      max-width: none; /* 移除最大宽度限制 */
+      background-color: transparent;
+    }
+
+    .drop-zone.dragover {
+      background-color: var(--color-dropzone-hover-bg);
+      border-color: var(--color-dropzone-hover-border);
+      color: var(--color-dropzone-hover-text);
+    }
+
+    /* 文件卡片容器 */
+    .file-cards {
+      flex: 1;
+      width: 100%;
+      /*max-width: 800px;*/
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      overflow-y: auto;
+      padding-right: 10px; /* 为滚动条留出空间 */
+    }
+
+    /* 文件卡片样式 */
+    .mdc-card {
+      background-color: var(--color-surface);
+      color: var(--color-on-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      transition: background-color 0.3s, box-shadow 0.3s;
+    }
+
+    /* 文件头部 */
+    .file-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    /* 文件详情 */
+    .file-details {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .file-details .mdc-typography--subtitle1 {
+      font-weight: 500;
+    }
+
+    /* 下载按钮 */
+    .mdc-button {
+      align-self: flex-start;
+    }
+
+    /* 处理日志区域 */
+    .log-section {
+      background-color: var(--color-background);
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--color-border);
+      max-height: 150px;
+      overflow-y: auto;
+      font-size: 14px;
+      font-family: 'Roboto', sans-serif;
+      white-space: pre-wrap; /* 保留换行 */
+      margin-top: 10px;
+    }
+
+    /* 自定义滚动条 */
+    .file-cards::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .file-cards::-webkit-scrollbar-track {
+      background: var(--color-background);
+    }
+
+    .file-cards::-webkit-scrollbar-thumb {
+      background-color: var(--color-border);
+      border-radius: 4px;
+    }
+
+    /* 响应式设计 */
+    @media (max-width: 600px) {
+      .upload-container, .file-cards {
+        padding: 15px;
+      }
+
+      .drop-zone {
+        padding: 30px;
+      }
+
+      .mdc-card {
+        padding: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- App Bar -->
+  <header class="mdc-top-app-bar mdc-top-app-bar--fixed">
+    <div class="mdc-top-app-bar__row">
+      <section class="mdc-top-app-bar__section mdc-top-app-bar__section--align-start">
+        <span class="mdc-top-app-bar__title">文件上传</span>
+      </section>
+    </div>
+  </header>
+
+  <div class="content">
+    <!-- 上传容器 -->
+    <div class="upload-container">
+      <div id="drop-zone" class="drop-zone">
+        拖拽文件到这里或点击上传
+      </div>
+      <input type="file" id="file-input" style="display: none;" multiple>
+    </div>
+
+    <!-- 文件信息卡片容器 -->
+    <div class="file-cards" id="file-cards">
+      <!-- 文件卡片将动态添加在这里 -->
+    </div>
+  </div>
+
+  <!-- 引入MDC Web JS -->
+  <script src="https://unpkg.com/material-components-web@14.0.0/dist/material-components-web.min.js"></script>
+  <script>
+    // 初始化所有MDC组件
+    mdc.autoInit();
+
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const fileCardsContainer = document.getElementById('file-cards');
+
+    // 创建Web Worker
+    const worker = new Worker('worker.js');
+
+    // 存储文件与卡片的对应关系
+    const fileCardMap = {};
+
+    // 生成唯一ID
+    function generateUniqueId() {
+      return 'id-' + Math.random().toString(36).substr(2, 16);
+    }
+
+    // 处理Web Worker消息
+    worker.addEventListener('message', (event) => {
+      const { id, type, message, processedUrl, processedFileName } = event.data;
+
+      const card = fileCardMap[id];
+      if (!card) return;
+
+      if (type === 'log') {
+        appendLog(card, message);
+      } else if (type === 'complete') {
+        const downloadButton = card.querySelector('button');
+        downloadButton.disabled = false;
+        downloadButton.addEventListener('click', () => {
+          const a = document.createElement('a');
+          a.href = processedUrl;
+          a.download = processedFileName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        });
+
+        // 释放URL对象
+        downloadButton.addEventListener('click', () => {
+          setTimeout(() => {
+            URL.revokeObjectURL(processedUrl);
+          }, 1000);
+        });
+      }
+    });
+
+    // 处理文件上传
+    function handleFiles(files) {
+      Array.from(files).forEach(file => {
+        const id = generateUniqueId();
+        // 创建文件卡片
+        const card = createFileCard(file, id);
+        fileCardsContainer.appendChild(card);
+
+        // 存储文件与卡片的对应关系
+        fileCardMap[id] = card;
+
+        // 将文件发送给Web Worker处理
+        worker.postMessage({ file, id });
+      });
+    }
+
+    // 创建文件信息卡片
+    function createFileCard(file, id) {
+      const card = document.createElement('div');
+      card.classList.add('mdc-card');
+
+      // 文件头部信息
+      const header = document.createElement('div');
+      header.classList.add('file-header');
+
+      const details = document.createElement('div');
+      details.classList.add('file-details');
+
+      const name = document.createElement('span');
+      name.textContent = file.name || 'unknown';
+      name.classList.add('mdc-typography--subtitle1');
+
+      const size = document.createElement('span');
+      size.textContent = formatFileSize(file.size) || 'unknown';
+      size.classList.add('mdc-typography--body2');
+
+      details.appendChild(name);
+      details.appendChild(size);
+
+      const downloadButton = document.createElement('button');
+      downloadButton.classList.add('mdc-button', 'mdc-button--outlined');
+      downloadButton.disabled = true; // 初始禁用
+      downloadButton.textContent = '下载处理后文件';
+
+      // 初始化MDC按钮
+      mdc.ripple.MDCRipple.attachTo(downloadButton);
+
+      header.appendChild(details);
+      header.appendChild(downloadButton);
+
+      // 处理日志区域
+      const logSection = document.createElement('div');
+      logSection.classList.add('log-section');
+      logSection.textContent = '处理日志：\n';
+
+      card.appendChild(header);
+      card.appendChild(logSection);
+
+      return card;
+    }
+
+    // 格式化文件大小
+    function formatFileSize(bytes) {
+      if (isNaN(bytes)) return 'unknown';
+      const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+      if (bytes === 0) return '0 Byte';
+      const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)), 10);
+      return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+    }
+
+    // 追加日志到指定卡片
+    function appendLog(card, message) {
+      const logSection = card.querySelector('.log-section');
+      const timestamp = new Date().toLocaleTimeString();
+      logSection.textContent += `[${timestamp}] ${message}\n`;
+      logSection.scrollTop = logSection.scrollHeight;
+    }
+
+    // 拖拽事件处理
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        handleFiles(files);
+      }
+    });
+
+    // 点击上传区域触发文件选择
+    dropZone.addEventListener('click', () => {
+      fileInput.click();
+    });
+
+    // 文件选择后处理
+    fileInput.addEventListener('change', () => {
+      const files = fileInput.files;
+      if (files.length > 0) {
+        handleFiles(files);
+      }
+    });
+  </script>
+</body>
+</html>

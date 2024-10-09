@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>展讯在线签名</title>
+    <style>
+        /* CSS变量定义，支持暗色和亮色模式 */
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #333333;
+            --nav-bg: #f0f0f0;
+            --nav-hover: #e0e0e0;
+            --link-color: #007BFF;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #121212;
+                --text-color: #ffffff;
+                --nav-bg: #1e1e1e;
+                --nav-hover: #333333;
+                --link-color: #1E90FF;
+            }
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .container {
+            text-align: center;
+            padding: 20px;
+            border-radius: 10px;
+            background-color: var(--nav-bg);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+
+        nav a {
+            display: block;
+            margin: 10px 0;
+            padding: 15px;
+            text-decoration: none;
+            color: var(--link-color);
+            background-color: var(--bg-color);
+            border-radius: 5px;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        nav a:hover {
+            background-color: var(--nav-hover);
+            transform: translateY(-2px);
+        }
+
+        /* 移动设备优化 */
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1.5em;
+            }
+
+            nav a {
+                padding: 12px;
+                font-size: 1em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>展讯在线签名</h1>
+        <nav>
+            <a href="/avbtool">AVB Tool</a>
+            <a href="/legacy">Legacy</a>
+        </nav>
+    </div>
+</body>
+</html>
