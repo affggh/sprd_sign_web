@@ -83,6 +83,10 @@
     </style>
 </head>
 <body>
+    <div id="dialog" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); padding:20px; background-color: #f44336; color: white;">
+        <p id="message"></p>
+        <button onclick="closeDialog()">OK</button>
+    </div>
     <div class="container">
         <h1>展讯在线签名</h1>
         <nav>
@@ -90,5 +94,47 @@
             <a href="/legacy">Legacy</a>
         </nav>
     </div>
+    <script>
+                // Function to show dialog with message
+                function showDialog(message) {
+            document.getElementById("message").innerText = message;
+            document.getElementById("dialog").style.display = "block";
+        }
+
+        // Function to close dialog
+        function closeDialog() {
+            document.getElementById("dialog").style.display = "none";
+        }
+
+        // Check for ES6 support (let/const, arrow function)
+        function isES6Supported() {
+            try {
+                new Function("() => {}"); // Arrow function test
+                let test = true;           // Let/Const test
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        // Check for WebAssembly support
+        function isWasmSupported() {
+            return typeof WebAssembly === "object";
+        }
+
+        // Check for Blob download support
+        function isBlobDownloadSupported() {
+            return typeof URL.createObjectURL === "function" && typeof Blob === "function";
+        }
+
+        // Feature support check
+        if (!isES6Supported()) {
+            showDialog("Your browser does not support ES6 features.");
+        } else if (!isWasmSupported()) {
+            showDialog("Your browser does not support WebAssembly.");
+        } else if (!isBlobDownloadSupported()) {
+            showDialog("Your browser does not support Blob download.");
+        }
+    </script>
 </body>
 </html>
