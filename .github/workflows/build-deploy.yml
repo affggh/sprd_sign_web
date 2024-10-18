@@ -43,7 +43,9 @@ jobs:
           actions-cache-folder: ${{ env.emsdk_cache_dir }}
    
       - name: Run build script
-        run: ./build.sh
+        run: |
+          chmod +x ./build.sh
+          ./build.sh
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v3
