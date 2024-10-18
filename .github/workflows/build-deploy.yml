@@ -1,0 +1,70 @@
+name: Emscripten Build and Deploy
+
+on:
+  push:
+    branches:
+      - master  # 仅当推送到main分支时触发
+  workflow_dispatch:
+    
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    permissions:
+      actions: write
+    env:
+      #emsdk_ver: 3.1.37
+      emsdk_cache_dir: "emsdk-cache"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+          
+      - name: Prepare (Host)
+        run: |
+          sudo apt update
+          sudo DEBIAN_FRONTEND=noninteractive apt install -y curl tar file \
+                        build-essential pkg-config cmake ninja-build p7zip-full
+
+      - name: Cache (Emscripten)
+        id: cache-emsdk-system-libs
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.emsdk_cache_dir }}
+          #key: emsdk-${{ env.emsdk_ver }}-${{ runner.os }}
+          key: emsdk-${{ runner.os }}
+
+      - name: Prepare (Emscripten)
+        uses: mymindstorm/setup-emsdk@v13
+        with:
+          #version: ${{ env.emsdk_ver }}
+          actions-cache-folder: ${{ env.emsdk_cache_dir }}
+   
+      - name: Run build script
+        run: ./build.sh
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-dist
+          path: build/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Download Build Artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: build-dist
+
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: build/dist
