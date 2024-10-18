@@ -135,85 +135,83 @@ def generate(meta_path: str) -> None:
         if struct.unpack("<I", buffer[0:4])[0] == 0x42544844:
             ptr += 0x200
 
-            vbheader = AvbVBMetaImageHeader(
-                buffer[ptr : ptr + len(AvbVBMetaImageHeader)]
-            )
-            algorithm_type = reverse_uint32(vbheader.algorithm_type)
-            rsa = 256 * (1 if algorithm_type < 4 else 2)
-            algorithm = 1024 * pow(
-                2, algorithm_type if algorithm_type < 3 else algorithm_type - 3
-            )
-            print(
-                f"python avbtool make_vbmeta_image --key rsa{algorithm}_vbmeta.pem --algorithm SHA{rsa}_RSA{algorithm} \\",
-                file=fo,
-            )
+        vbheader = AvbVBMetaImageHeader(buffer[ptr : ptr + len(AvbVBMetaImageHeader)])
+        algorithm_type = reverse_uint32(vbheader.algorithm_type)
+        rsa = 256 * (1 if algorithm_type < 4 else 2)
+        algorithm = 1024 * pow(
+            2, algorithm_type if algorithm_type < 3 else algorithm_type - 3
+        )
+        print(
+            f"python avbtool make_vbmeta_image --key rsa{algorithm}_vbmeta.pem --algorithm SHA{rsa}_RSA{algorithm} \\",
+            file=fo,
+        )
 
-            chainheader = AvbChainPartitionDescriptor(
-                buffer[
-                    ptr
-                    + len(AvbVBMetaImageHeader)
-                    + reverse_uint64(vbheader.authentication_data_block_size) : ptr
-                    + len(AvbVBMetaImageHeader)
-                    + reverse_uint64(vbheader.authentication_data_block_size)
-                    + len(AvbChainPartitionDescriptor)
-                ]
-            )
-            tag = reverse_uint64(chainheader.tag)
-
-            off = (
+        chainheader = AvbChainPartitionDescriptor(
+            buffer[
                 ptr
+                + len(AvbVBMetaImageHeader)
+                + reverse_uint64(vbheader.authentication_data_block_size) : ptr
                 + len(AvbVBMetaImageHeader)
                 + reverse_uint64(vbheader.authentication_data_block_size)
                 + len(AvbChainPartitionDescriptor)
+            ]
+        )
+        tag = reverse_uint64(chainheader.tag)
+
+        off = (
+            ptr
+            + len(AvbVBMetaImageHeader)
+            + reverse_uint64(vbheader.authentication_data_block_size)
+            + len(AvbChainPartitionDescriptor)
+        )
+        while True:
+            rollback_index_location = reverse_uint32(
+                chainheader.rollback_index_location
             )
-            while True:
-                rollback_index_location = reverse_uint32(
-                    chainheader.rollback_index_location
-                )
-                partition_name_len = reverse_uint32(chainheader.partition_name_len)
-                public_key_len = reverse_uint32(chainheader.public_key_len)
+            partition_name_len = reverse_uint32(chainheader.partition_name_len)
+            public_key_len = reverse_uint32(chainheader.public_key_len)
 
-                name = buffer[off : off + partition_name_len]
-                key_path = f"rsa{algorithm}_{name.decode()}_pub.bin"
-                print(f"extract {key_path}")
+            name = buffer[off : off + partition_name_len]
+            key_path = f"rsa{algorithm}_{name.decode()}_pub.bin"
+            print(f"extract {key_path}")
 
-                with open(key_path, "wb") as key_file:
-                    key_file.write(
-                        buffer[
-                            off
-                            + partition_name_len : off
-                            + partition_name_len
-                            + public_key_len
-                        ]
-                    )
-
-                print(
-                    f"--chain_partition {name.decode()}:{rollback_index_location}:keys/{key_path} \\",
-                    file=fo,
+            with open(key_path, "wb") as key_file:
+                key_file.write(
+                    buffer[
+                        off
+                        + partition_name_len : off
+                        + partition_name_len
+                        + public_key_len
+                    ]
                 )
 
-                off += (
-                    len(AvbChainPartitionDescriptor)
-                    + partition_name_len
-                    + public_key_len
-                    + 7
-                ) & 0xFFFFFFF8
-                chainheader = AvbChainPartitionDescriptor(
-                    buffer[off - len(AvbChainPartitionDescriptor) : off]
-                )
-                if tag != reverse_uint64(chainheader.tag):
-                    break
+            print(
+                f"--chain_partition {name.decode()}:{rollback_index_location}:keys/{key_path} \\",
+                file=fo,
+            )
 
-            padding = 0x1000
-            if struct.unpack("<I", buffer[0:4])[0] == 0x42544844:
-                padding = struct.unpack("<I", buffer[0x30 : 0x30 + 4])[0]
-            elif struct.unpack("<I", buffer[0xFFE00 : 0xFFE00 + 4])[0] == 0x42544844:
-                padding = struct.unpack("<I", buffer[0xFFE30 : 0xFFE30 + 4])[0]
-            else:
-                print('Warning: "DHTB" header not found.')
+            off += (
+                len(AvbChainPartitionDescriptor)
+                + partition_name_len
+                + public_key_len
+                + 7
+            ) & 0xFFFFFFF8
+            chainheader = AvbChainPartitionDescriptor(
+                buffer[off - len(AvbChainPartitionDescriptor) : off]
+            )
+            if tag != reverse_uint64(chainheader.tag):
+                break
 
-            print(f"--padding_size {padding} --output vbmeta-sign-custom.img", file=fo)
-            print(f"padding_size: {padding}")
+        padding = 0x1000
+        if struct.unpack("<I", buffer[0:4])[0] == 0x42544844:
+            padding = struct.unpack("<I", buffer[0x30 : 0x30 + 4])[0]
+        elif struct.unpack("<I", buffer[0xFFE00 : 0xFFE00 + 4])[0] == 0x42544844:
+            padding = struct.unpack("<I", buffer[0xFFE30 : 0xFFE30 + 4])[0]
+        else:
+            print('Warning: "DHTB" header not found.')
+
+        print(f"--padding_size {padding} --output vbmeta-sign-custom.img", file=fo)
+        print(f"padding_size: {padding}")
 
 
 def generate_args(meta_path: str) -> tuple:
@@ -226,107 +224,105 @@ def generate_args(meta_path: str) -> tuple:
         if struct.unpack("<I", buffer[0:4])[0] == 0x42544844:
             ptr += 0x200
 
-            vbheader = AvbVBMetaImageHeader(
-                buffer[ptr : ptr + len(AvbVBMetaImageHeader)]
+        vbheader = AvbVBMetaImageHeader(buffer[ptr : ptr + len(AvbVBMetaImageHeader)])
+        algorithm_type = reverse_uint32(vbheader.algorithm_type)
+        rsa = 256 * (1 if algorithm_type < 4 else 2)
+        algorithm = 1024 * pow(
+            2, algorithm_type if algorithm_type < 3 else algorithm_type - 3
+        )
+        # print(
+        #    f"python avbtool make_vbmeta_image --key rsa{algorithm}_vbmeta.pem --algorithm SHA{rsa}_RSA{algorithm} \\",
+        #    file=fo,
+        # )
+        args.extend(
+            (
+                "avbtool",  # dummy command skip argparse
+                "make_vbmeta_image",
+                "--key",
+                f"rsa{algorithm}_vbmeta.pem",
+                "--algorithm",
+                f"SHA{rsa}_RSA{algorithm}",
             )
-            algorithm_type = reverse_uint32(vbheader.algorithm_type)
-            rsa = 256 * (1 if algorithm_type < 4 else 2)
-            algorithm = 1024 * pow(
-                2, algorithm_type if algorithm_type < 3 else algorithm_type - 3
+        )
+
+        chainheader = AvbChainPartitionDescriptor(
+            buffer[
+                ptr
+                + len(AvbVBMetaImageHeader)
+                + reverse_uint64(vbheader.authentication_data_block_size) : ptr
+                + len(AvbVBMetaImageHeader)
+                + reverse_uint64(vbheader.authentication_data_block_size)
+                + len(AvbChainPartitionDescriptor)
+            ]
+        )
+        tag = reverse_uint64(chainheader.tag)
+
+        off = (
+            ptr
+            + len(AvbVBMetaImageHeader)
+            + reverse_uint64(vbheader.authentication_data_block_size)
+            + len(AvbChainPartitionDescriptor)
+        )
+        while True:
+            rollback_index_location = reverse_uint32(
+                chainheader.rollback_index_location
             )
+            partition_name_len = reverse_uint32(chainheader.partition_name_len)
+            public_key_len = reverse_uint32(chainheader.public_key_len)
+
+            name = buffer[off : off + partition_name_len]
+            key_path = f"rsa{algorithm}_{name.decode()}_pub.bin"
+            print(f"extract {key_path}")
+
+            with open(key_path, "wb") as key_file:
+                key_file.write(
+                    buffer[
+                        off
+                        + partition_name_len : off
+                        + partition_name_len
+                        + public_key_len
+                    ]
+                )
+
             # print(
-            #    f"python avbtool make_vbmeta_image --key rsa{algorithm}_vbmeta.pem --algorithm SHA{rsa}_RSA{algorithm} \\",
+            #    f"--chain_partition {name.decode()}:{rollback_index_location}:keys/{key_path} \\",
             #    file=fo,
             # )
             args.extend(
                 (
-                    "avbtool", # dummy command skip argparse
-                    "make_vbmeta_image",
-                    "--key",
-                    f"rsa{algorithm}_vbmeta.pem",
-                    "--algorithm",
-                    f"SHA{rsa}_RSA{algorithm}",
+                    "--chain_partition",
+                    f"{name.decode()}:{rollback_index_location}:{key_path}",
                 )
             )
 
+            off += (
+                len(AvbChainPartitionDescriptor)
+                + partition_name_len
+                + public_key_len
+                + 7
+            ) & 0xFFFFFFF8
             chainheader = AvbChainPartitionDescriptor(
-                buffer[
-                    ptr
-                    + len(AvbVBMetaImageHeader)
-                    + reverse_uint64(vbheader.authentication_data_block_size) : ptr
-                    + len(AvbVBMetaImageHeader)
-                    + reverse_uint64(vbheader.authentication_data_block_size)
-                    + len(AvbChainPartitionDescriptor)
-                ]
+                buffer[off - len(AvbChainPartitionDescriptor) : off]
             )
-            tag = reverse_uint64(chainheader.tag)
+            if tag != reverse_uint64(chainheader.tag):
+                break
 
-            off = (
-                ptr
-                + len(AvbVBMetaImageHeader)
-                + reverse_uint64(vbheader.authentication_data_block_size)
-                + len(AvbChainPartitionDescriptor)
-            )
-            while True:
-                rollback_index_location = reverse_uint32(
-                    chainheader.rollback_index_location
-                )
-                partition_name_len = reverse_uint32(chainheader.partition_name_len)
-                public_key_len = reverse_uint32(chainheader.public_key_len)
+        padding = 0x1000
+        if struct.unpack("<I", buffer[0:4])[0] == 0x42544844:
+            padding = struct.unpack("<I", buffer[0x30 : 0x30 + 4])[0]
+        elif struct.unpack("<I", buffer[0xFFE00 : 0xFFE00 + 4])[0] == 0x42544844:
+            padding = struct.unpack("<I", buffer[0xFFE30 : 0xFFE30 + 4])[0]
+        else:
+            print('Warning: "DHTB" header not found.')
 
-                name = buffer[off : off + partition_name_len]
-                key_path = f"rsa{algorithm}_{name.decode()}_pub.bin"
-                print(f"extract {key_path}")
+        # print(f"--padding_size {padding} --output vbmeta-sign-custom.img", file=fo)
+        args.extend(
+            ("--padding_size", f"{padding}", "--output", "vbmeta-sign-custom.img")
+        )
 
-                with open(key_path, "wb") as key_file:
-                    key_file.write(
-                        buffer[
-                            off
-                            + partition_name_len : off
-                            + partition_name_len
-                            + public_key_len
-                        ]
-                    )
+        print(f"padding_size: {padding}")
 
-                # print(
-                #    f"--chain_partition {name.decode()}:{rollback_index_location}:keys/{key_path} \\",
-                #    file=fo,
-                # )
-                args.extend(
-                    (
-                        "--chain_partition",
-                        f"{name.decode()}:{rollback_index_location}:{key_path}",
-                    )
-                )
-
-                off += (
-                    len(AvbChainPartitionDescriptor)
-                    + partition_name_len
-                    + public_key_len
-                    + 7
-                ) & 0xFFFFFFF8
-                chainheader = AvbChainPartitionDescriptor(
-                    buffer[off - len(AvbChainPartitionDescriptor) : off]
-                )
-                if tag != reverse_uint64(chainheader.tag):
-                    break
-
-            padding = 0x1000
-            if struct.unpack("<I", buffer[0:4])[0] == 0x42544844:
-                padding = struct.unpack("<I", buffer[0x30 : 0x30 + 4])[0]
-            elif struct.unpack("<I", buffer[0xFFE00 : 0xFFE00 + 4])[0] == 0x42544844:
-                padding = struct.unpack("<I", buffer[0xFFE30 : 0xFFE30 + 4])[0]
-            else:
-                print('Warning: "DHTB" header not found.')
-
-            # print(f"--padding_size {padding} --output vbmeta-sign-custom.img", file=fo)
-            args.extend(
-                ("--padding_size", f"{padding}", "--output", "vbmeta-sign-custom.img")
-            )
-
-            print(f"padding_size: {padding}")
-
-            return args
+        return args
 
 
 if __name__ == "__main__":
