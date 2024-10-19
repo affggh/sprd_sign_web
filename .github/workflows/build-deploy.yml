@@ -1,4 +1,4 @@
-ame: Emscripten Build and Deploy
+name: Emscripten Build and Deploy
 
 on:
   push:
