@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <title>漂亮的界面设计</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* 全局样式 */
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            background: linear-gradient(135deg, #00c6ff, #7df9ff);
+            color: #000;
+            transition: background 0.3s, color 0.3s;
+            overflow-x: hidden;
+        }
+
+        /* 明亮模式背景 */
+        body.light-mode {
+            background: linear-gradient(135deg, #00c6ff, #7df9ff);
+            color: #000;
+        }
+
+        /* 暗黑模式背景 */
+        body.dark-mode {
+            background: linear-gradient(135deg, #2c3e50, #4ca1af);
+            color: #fff;
+        }
+
+        /* 容器样式 */
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        /* 上层卡片区域 */
+        .cards {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: space-between;
+        }
+
+        /* 卡片通用样式 */
+        .card {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            padding: 20px;
+            flex: 1 1 280px;
+            display: flex;
+            flex-direction: column;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        /* 明亮模式卡片 */
+        body.light-mode .card {
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            color: #000;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 暗黑模式卡片 */
+        body.dark-mode .card {
+            background: rgba(44, 62, 80, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+        }
+
+        /* 卡片标题 */
+        .card-title {
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        /* 拖拽区域 */
+        .dropzone {
+            flex: 1;
+            border: 2px dashed #ffffff;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+            cursor: pointer;
+            transition: background 0.3s, border-color 0.3s;
+            height: 100px;
+            text-align: center;
+            padding: 10px;
+        }
+
+        body.light-mode .dropzone {
+            border-color: #333;
+            color: #333;
+        }
+
+        body.dark-mode .dropzone {
+            border-color: #fff;
+            color: #fff;
+        }
+
+        .dropzone.dragover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* 文件信息区域 */
+        .file-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            margin-top: 10px;
+        }
+
+        .file-details {
+            margin-bottom: 10px;
+        }
+
+        .delete-button {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: #e74c3c;
+            color: white;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background-color 0.3s;
+        }
+
+        .delete-button:hover {
+            background-color: #c0392b;
+        }
+
+        /* 表单元素 */
+        .form-group {
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            margin-bottom: 5px;
+        }
+
+        .form-group select,
+        .form-group input {
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            outline: none;
+            transition: background 0.3s, color 0.3s, border-color 0.3s;
+            font-size: 1em;
+        }
+
+        body.light-mode .form-group select,
+        body.light-mode .form-group input {
+            background: #fff;
+            color: #000;
+        }
+
+        body.dark-mode .form-group select,
+        body.dark-mode .form-group input {
+            background: #34495e;
+            color: #fff;
+            border: 1px solid #fff;
+        }
+
+        /* 按钮样式 */
+        .btn {
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: #4CAF50;
+            color: white;
+            font-size: 1em;
+            cursor: not-allowed;
+            opacity: 0.6;
+            transition: opacity 0.3s, cursor 0.3s, background-color 0.3s;
+        }
+
+        .btn.enabled {
+            cursor: pointer;
+            opacity: 1;
+        }
+
+        .btn.enabled:hover {
+            background-color: #45a049;
+        }
+
+        /* 日志区域 */
+        .log {
+            background: rgba(0, 0, 0, 0.5);
+            color: #00FF00;
+            padding: 15px;
+            border-radius: 10px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        body.light-mode .log {
+            background: rgba(255, 255, 255, 0.1);
+            color: #00a000;
+        }
+
+        body.dark-mode .log {
+            background: rgba(0, 0, 0, 0.7);
+            color: #00FF00;
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 1024px) {
+            .dropzone {
+                height: 80px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .cards {
+                flex-direction: column;
+            }
+
+            .card {
+                flex: 1 1 100%;
+            }
+
+            .dropzone {
+                height: 70px;
+            }
+
+            .card-title {
+                font-size: 1.1em;
+            }
+
+            .form-group select,
+            .form-group input {
+                font-size: 0.9em;
+            }
+
+            .btn {
+                font-size: 0.9em;
+                padding: 8px;
+            }
+
+            .log {
+                height: 150px;
+                font-size: 0.9em;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .dropzone {
+                height: 60px;
+                font-size: 0.8em;
+            }
+
+            .card-title {
+                font-size: 1em;
+            }
+
+            .form-group select,
+            .form-group input {
+                font-size: 0.8em;
+                padding: 6px;
+            }
+
+            .btn {
+                font-size: 0.8em;
+                padding: 6px;
+            }
+
+            .log {
+                height: 120px;
+                font-size: 0.8em;
+            }
+        }
+    </style>
+</head>
+
+<body class="light-mode">
+    <div class="container">
+        <div class="cards">
+            <!-- 文件上传卡片1 -->
+            <div class="card" id="uploadCard1">
+                <div class="card-title">上传boot镜像
+                </div>
+                <div class="dropzone" id="dropzone1">拖拽文件到这里或点击上传</div>
+                <input type="file" id="fileInput1" style="display: none;">
+                <div class="file-info" id="fileInfo1" style="display: none;">
+                    <div class="file-details" id="fileDetails1"></div>
+                    <button class="delete-button" id="deleteButton1">删除</button>
+                </div>
+            </div>
+
+            <!-- 文件上传卡片2 -->
+            <div class="card" id="uploadCard2">
+                <div class="card-title">上传vbmeta镜像</div>
+                <div class="dropzone" id="dropzone2">拖拽文件到这里或点击上传</div>
+                <input type="file" id="fileInput2" style="display: none;">
+                <div class="file-info" id="fileInfo2" style="display: none;">
+                    <div class="file-details" id="fileDetails2"></div>
+                    <button class="delete-button" id="deleteButton2">删除</button>
+                </div>
+            </div>
+
+            <!-- 配置卡片 -->
+            <div class="card" id="configCard">
+                <div class="card-title">配置</div>
+                <div class="form-group">
+                    <label for="typeSelect">类型</label>
+                    <select id="typeSelect">
+                        <option value="boot">boot</option>
+                        <option value="recovery">recovery</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="partitionSize">分区大小</label>
+                    <input type="text" id="partitionSize" placeholder="请输入分区大小(字节)" value="36700160">
+                </div>
+                <div class="form-group">
+                    <label for="androidVersion">安卓版本</label>
+                    <select id="androidVersion">
+                        <option value="8">8</option>
+                        <option value="9">9</option>
+                        <option value="10">10</option>
+                        <option value="11">11</option>
+                        <option value="13">13</option>
+                    </select>
+                </div>
+                <button class="btn" id="runButton" disabled>运行</button>
+            </div>
+        </div>
+
+        <!-- 日志卡片 -->
+        <div class="card">
+            <div class="card-title">运行日志</div>
+            <div class="log" id="logArea">UI Generated by ChatGPT
+                <br>Script written by affggh<br>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 获取元素
+        const dropzone1 = document.getElementById('dropzone1');
+        const fileInput1 = document.getElementById('fileInput1');
+        const fileInfo1 = document.getElementById('fileInfo1');
+        const fileDetails1 = document.getElementById('fileDetails1');
+        const deleteButton1 = document.getElementById('deleteButton1');
+
+        const dropzone2 = document.getElementById('dropzone2');
+        const fileInput2 = document.getElementById('fileInput2');
+        const fileInfo2 = document.getElementById('fileInfo2');
+        const fileDetails2 = document.getElementById('fileDetails2');
+        const deleteButton2 = document.getElementById('deleteButton2');
+
+        const runButton = document.getElementById('runButton');
+        const logArea = document.getElementById('logArea');
+        const body = document.body;
+
+        const worker = new Worker("./worker.js");
+        let worker_id = 0;
+
+        let file1Uploaded = false;
+        let file2Uploaded = false;
+
+        // 检查系统主题并设置
+        function setTheme() {
+            const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
+            if (prefersDarkScheme.matches) {
+                body.classList.remove('light-mode');
+                body.classList.add('dark-mode');
+            } else {
+                body.classList.remove('dark-mode');
+                body.classList.add('light-mode');
+            }
+        }
+
+        // 监听主题变化
+        window.matchMedia("(prefers-color-scheme: dark)").addEventListener('change', setTheme);
+
+        // 初始设置主题
+        setTheme();
+
+        // 更新按钮状态
+        function updateButtonState() {
+            if (file1Uploaded && file2Uploaded) {
+                runButton.disabled = false;
+                runButton.classList.add('enabled');
+            } else {
+                runButton.disabled = true;
+                runButton.classList.remove('enabled');
+            }
+        }
+
+        // 添加日志
+        function addLog(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            logArea.innerHTML += `[${timestamp}] ${message}<br>`;
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+
+        // 处理文件上传
+        function handleFiles(file, dropzone, fileInfo, fileDetails, deleteButton) {
+            // 显示文件信息
+            const fileSizeInKB = (file.size / 1024).toFixed(2);
+            fileDetails.textContent = `文件名: ${file.name} (${fileSizeInKB} KB)`;
+            fileInfo.style.display = 'flex';
+            dropzone.style.display = 'none';
+
+            addLog(`文件 "${file.name}" 已上传到 ${dropzone.id}`);
+
+            // 更新上传状态
+            if (dropzone.id === 'dropzone1') {
+                file1Uploaded = true;
+            } else if (dropzone.id === 'dropzone2') {
+                file2Uploaded = true;
+            }
+            updateButtonState();
+        }
+
+        // 设置拖拽事件
+        function setupDropzone(dropzone, fileInput, fileInfo, fileDetails, deleteButton) {
+            // 点击打开文件选择
+            dropzone.addEventListener('click', () => fileInput.click());
+
+            // 文件选择
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    handleFiles(e.target.files[0], dropzone, fileInfo, fileDetails, deleteButton);
+                }
+            });
+
+            // 拖拽事件
+            dropzone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropzone.classList.add('dragover');
+            });
+
+            dropzone.addEventListener('dragleave', () => {
+                dropzone.classList.remove('dragover');
+            });
+
+            dropzone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropzone.classList.remove('dragover');
+                if (e.dataTransfer.files.length > 0) {
+                    handleFiles(e.dataTransfer.files[0], dropzone, fileInfo, fileDetails, deleteButton);
+                }
+            });
+
+            // 删除按钮事件
+            deleteButton.addEventListener('click', () => {
+                // 清除文件信息
+                fileDetails.textContent = '';
+                fileInfo.style.display = 'none';
+                dropzone.style.display = 'flex';
+                // 重置文件输入
+                fileInput.value = '';
+                // 更新上传状态
+                if (dropzone.id === 'dropzone1') {
+                    file1Uploaded = false;
+                } else if (dropzone.id === 'dropzone2') {
+                    file2Uploaded = false;
+                }
+                updateButtonState();
+                addLog(`文件已从 ${dropzone.id} 删除`);
+            });
+        }
+
+        // 初始化拖拽区域
+        setupDropzone(dropzone1, fileInput1, fileInfo1, fileDetails1, deleteButton1);
+        setupDropzone(dropzone2, fileInput2, fileInfo2, fileDetails2, deleteButton2);
+
+        // 运行按钮点击事件
+        runButton.addEventListener('click', () => {
+            if (!runButton.disabled) {
+                addLog('运行开始...');
+                // 获取配置值
+                const type = document.getElementById('typeSelect').value;
+                const partitionSize = document.getElementById('partitionSize').value;
+                const androidVersion = document.getElementById('androidVersion').value;
+                const boot_image = fileInput1.files[0];
+                const vbmeta_image = fileInput2.files[0];
+
+                addLog(`类型: ${type}`);
+                addLog(`分区大小: ${partitionSize}`);
+                addLog(`安卓版本: ${androidVersion}`);
+
+                // 模拟运行过程
+                //setTimeout(() => {
+                //    addLog('运行完成！');
+                //}, 2000);
+                const id = worker_id;
+                worker_id++;
+
+                worker.postMessage({
+                    id, boot_image, vbmeta_image, type, partition_size: partitionSize, android_ver: androidVersion
+                });
+                worker.onmessage =
+                    (event) => {
+                        const { id, type, message, signed_zip } = event.data;
+
+                        if (type == "log") {
+                            addLog(message);
+                        } else if (type == "success") {
+                            addLog("开始下载文件...");
+                            const url = signed_zip;
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'SignedImages.zip';
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url); // 释放内存
+                        }
+                    };
+
+            }
+        });
+    </script>
+</body>
+
+</html>
