@@ -65,7 +65,7 @@ jobs:
       with:
         name: build-dist
 
-    - name:
+    - name: ls
       run: |
         ls 
 
