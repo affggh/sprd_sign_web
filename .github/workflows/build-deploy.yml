@@ -1,4 +1,4 @@
-name: Emscripten Build and Deploy
+ame: Emscripten Build and Deploy
 
 on:
   push:
@@ -52,12 +52,25 @@ jobs:
         with:
           name: build-dist
           path: build/dist
-      - name: Deploy
-        uses: peaceiris/actions-gh-pages@v4
-        # If you're changing the branch from main,
-        # also change the `main` in `refs/heads/main`
-        # below accordingly.
-        if: github.ref == 'refs/heads/master'
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./build/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Download Build Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: build-dist
+
+    - name:
+      run: |
+        ls 
+
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v4
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: build/dist
